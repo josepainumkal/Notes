@@ -18,7 +18,7 @@ celery -A proj worker -l info -Q queue1,queue2
 the changes are made in vwadaptor repositroy which is saved at desktop
 
 repository:
-  vwadaptor
+  vwadaptor (celery worker config changes, queue config changes, api model run start shanges,etc)
   taskmanager
 
 
