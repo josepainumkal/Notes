@@ -27,7 +27,7 @@ celery -A proj worker -l info -Q queue1,queue2
 ------------------------------------------------------------------------
 the changes are made in vwadaptor repositroy which is saved at desktop
 repository:
-  vwadaptor (celery worker config changes, queue config changes, api model run start shanges,etc)
+  vwadaptor (celery worker config changes, queue config changes, api model run start shanges,serializer.py for tak_id, etc)
   taskmanager
   
 -----------------changes made in api for new queue--------------------------------------------------------
@@ -77,5 +77,15 @@ def start(id):
     else:
       err = {"message":"ModelRun {0} Not Found".format(id)}
       return jsonify(err), 404
- ----------------
+-----------------------------------------------------------------------------------------------------------------
 backup folder : desktop/seams_rentedQueue_backup
+ if you change anything inside /api/<id>/start, error may come "JSON coldnot be decode error"
+after making any change, 
+remove '/vwstorage' and  refresh model dashboard page..
+if error, then go to home page and reach model page..
+if now also error, remove '/vwstorage' and remove all containers(first 5 is enough) and try...
+-----------------------------------------------------------------------------------------------------------------
+  
+  
+  
+  
