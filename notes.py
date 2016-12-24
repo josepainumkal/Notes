@@ -1,9 +1,19 @@
 # get length of the queue ( which is also a redis item):
-
+----------------get queue length------------------------------
 from redis import Redis
 redis = Redis(host='workerdb', port=6379, db=0)
 print redis.llen('rentedQueue')
----------------------------------------------------------------
+print redis.llen('celery')
+
+----------------------read and write frrom redis-----------------------------------------
+p = redis.pipeline()
+p.set('MaxRentedModelsAllowed', 3200)
+p.set('CurrentRentedModels', 200)
+p.execute()
+MaxRentedModelsAllowed = redis.get('MaxRentedModelsAllowed')
+CurrentRentedModels = redis.get('CurrentRentedModels')
+
+------------------------create a new queue---------------------------------------
 # if you want different queue dynamically,
 process_link.apply_async(args=[link1],
                          queue=queue1)
@@ -16,13 +26,11 @@ celery -A proj worker -l info -Q queue1,queue2
 
 ------------------------------------------------------------------------
 the changes are made in vwadaptor repositroy which is saved at desktop
-
 repository:
   vwadaptor (celery worker config changes, queue config changes, api model run start shanges,etc)
   taskmanager
-
-
--------------------------------------------------------------------------
+  
+-----------------changes made in api for new queue--------------------------------------------------------
 
 @blueprint.route("/<int:id>/start",methods=['PUT'])
 @jwt_required()
