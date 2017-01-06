@@ -12,6 +12,7 @@ p.set('CurrentRentedModels', 200)
 p.execute()
 MaxRentedModelsAllowed = redis.get('MaxRentedModelsAllowed')
 CurrentRentedModels = redis.get('CurrentRentedModels')
+redis.delete('CurrentRentedModels')
 
 ------------------------create a new queue---------------------------------------
 # if you want different queue dynamically,
