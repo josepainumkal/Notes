@@ -1,0 +1,780 @@
+To remove dangled images:
+docker rmi $(docker images -f "dangling=true" -q)
+
+********************************************************
+make changes in host file:
+github repo should be exact same as the docker compose image file
+pput volume creation in compose file
+********************************************************
+
+To check folder size:
+du -hs /vwstorage
+
+To  get folder size:
+ubuntu@test:/var/lib/docker$ sudo du -h --max-depth=1 | sort -hr
+
+********************************************************
+Get inside modledb, userdb container (from putty):
+
+To connect to postgres DB:
+psql -U postgres -d postgres
+
+To list down the tables in DB:
+\dt
+
+List down tables and schemas:
+\l
+
+To see structure of table:
+\d modelruns
+
+select * from modelprogress order by modelrun_id;
+
+Make a list of the resource files before DELETE:
+DELETE FROM modelresources WHERE modelrun_id IN (382,335,336,337,383);
+DELETE FROM modelprogress WHERE modelrun_id IN (382,335,336,337,383);
+DELETE FROM modelruns WHERE id IN (382,335,336,337,383);
+
+NOW Goto /vwstorage and delete the files
+
+SELECT * FROM modelresources ORDER BY resource_size DESC;
+
+SELECT mr.modelrun_id, SUM(mr.resource_size), md.title FROM modelresources mr, modelruns md WHERE mr.modelrun_id=md.id GROUP BY mr.modelrun_id, md.title ORDER BY sum DESC;
+
+*************************************************************
+
+Add the files to delete in a txt file in /vwstorage:
+
+sudo vim delfile.txt
+
+Copy the file names to delete and save it.
+sudo xargs rm < delfile.txt
+
+
+******************Delete all the modelruns of a user *******************************************
+
+
+SELECT * FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (5,7,8,9,6));
+DELETE FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (5,7,8,9,6));
+DELETE FROM modelprogress WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (5,7,8,9,6));
+DELETE FROM modelruns WHERE id IN (SELECT id FROM modelruns WHERE user_id IN (5,7,8,9,6));
+
+*************************************************************************************************
+Updating letsencrypt certificate of manager.virtualwatershed.org:
+su -[or sudo - (to login as root)]
+root@dockermgmt:/opt/letsencrypt# sudo service nginx stop
+root@dockermgmt:/opt/letsencrypt# sudo -H ./letsencrypt-auto certonly --standalone --renew-by-default -d manager.virtualwatershed.org
+root@dockermgmt:/opt/letsencrypt# sudo service nginx start
+
+Links:
+https://www.linode.com/docs/security/ssl/install-lets-encrypt-to-create-ssl-certificates
+https://www.digitalocean.com/community/tutorials/how-to-secure-apache-with-let-s-encrypt-on-ubuntu-16-04
+
+**************************************************************************************************
+
+
+
+ls -la
+git clone https://github.com/josepainumkal/prms-vegetation-scenarios.git
+
+git clone https://github.com/josepainumkal/convtools.git
+
+
+git status
+cd prms-vegetation-scenarios
+git checkout jose_toolUI
+git status
+sudo chown -R ubuntu:sudo prms-vegetation-scenarios
+
+groups <username>
+
+/home/ubuntu/prms-vegetation-scenarios:/var/www/prms-veg
+
+
+______
+Gstore Work:
+
+for creating a python package : 
+https://pythonhosted.org/an_example_pypi_project/setuptools.html
+
+setuptools is used to make it vaialble through pip.
+http://peterdowns.com/posts/first-time-with-pypi.html
+
+Flask Test Cases:
+http://flask.pocoo.org/docs/0.11/testing/
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+docker-machine create --driver virtualbox --virtualbox-disk-size "40000" --virtualbox-memory 4096 default
+docker-machine env default
+eval "$(docker-machine env default)"
+=========================================================================
+push image to docker from terminal:
+
+docker login --username=josepainumkal --email=josepainumkal@gmail.com
+
+docker tag IMAGENAME:TAGNO josepainumkal/NEWIMAGENAME:TAGNO
+docker push josepainumkal/NEWIMAGENAME:TAGNO
+=========================================================================
+To see env variables:
+docker exec container-id env
+-------------------------------------------------------------------------
+
+docker run -d --name postgres-userdb postgres
+docker run -d --name postgres-webappdb postgres
+docker run -d --name postgres-modeldb postgres
+
+docker run -d --name redis-workerdb redis  redis-server --appendonly yes 
+docker run -d --name redis-sessiondb redis  redis-server --appendonly yes 
+
+docker run -d -it -i -e VW_SECRET_KEY='virtualwatershed' -e VWWEBAPP_PORT='80' -e VWWEBAPP_JWT_SECRET_KEY='virtualwatershed' -e VWWEBAPP_JWT_AUTH_HEADER_PREFIX='JWT' -e SQLALCHEMY_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' -e VWWEBAPP_SESSION_TYPE='redis' -e VWWEBAPP_SESSION_REDIS_HOST='sessiondb' -e VWWEBAPP_SESSION_COOKIE_NAME='vwsession' -e VWWEBAPP_LOGIN_URL='http://vw-dev:5005/login' -e VWWEBAPP_LOGOUT_URL='http://vw-dev:5005/logout' -e VWWEBAPP_REGISTER_URL='http://vw-dev:5005/register' -e MODEL_HOST='http://vw-dev:5000' --name vw-webapp -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -it -i --name vwmail -p 1080:80 djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+
+docker run -d -e VWAUTH_ENV='dev' -e VWAUTH_HOST='0.0.0.0' -e VWAUTH_JWT_EXPIRATION_DELTA='10' -e VWAUTH_JWT_SECRET_KEY='virtualwatershed' -e VWAUTH_MAIL_PORT='25' -e VWAUTH_MAIL_SERVER='vwmail' -e VWAUTH_MAIL_USE_SSL='false' -e VWAUTH_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWAUTH_SECURITY_CONFIRMABLE='true' -e VWAUTH_SECURITY_EMAIL_SENDER='welcome@virtualwatershed.org' -e VWAUTH_SECURITY_PASSWORD_HASH='sha512_crypt' -e VWAUTH_SECURITY_PASSWORD_SALT='add_salt' -e VWAUTH_SECURITY_RECOVERABLE='true' -e VWAUTH_SECURITY_REGISTERABLE='true' -e VWAUTH_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' -e VWAUTH_WTF_CSRF_CHECK_DEFAULT='false' -e VWAUTH_WTF_CSRF_ENABLED='false' -e VWAUTH_SESSION_TYPE='redis' -e VWAUTH_SESSION_COOKIE_DOMAIN='.vw-dev' -e VWAUTH_SESSION_REDIS_HOST='sessiondb' -e VWAUTH_SESSION_COOKIE_NAME='vwsession' --name vwauth -p 5005:80 --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -it -i -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --name vwmonitor -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+docker run -d -t -i -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='virtualwatershed' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+docker run  -d -it -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --name vwworker --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+=========================================================================================================================================
+
+--link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb
+docker run -d -it -i -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --name vwmonitor -p 5555:80 --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+
+Self managed system:
+
+
+check workers are all busy with jobs or not
+
+if not busy --old way...nothing to do
+if busy:
+  worker will generate ne w container and start the job 
+  aftre job done -remove the container
+
+
+
+What I am trying to implement: 
+
+I want to monitor the task queue and know whether the all the worker containers are busy with jobs or not.
+If no workers are remaining to process the job, I want to scale up one instance of worker.
+Once the job is done, the new worker will be removed.
+
+How can i check whether workers are all busy or not.
+Can we have a call sometime when you are free (Saturday)
+
+
+
+
+
+
+
+How many jobs (PRMS model runs), a single worker can handle?
+thread.start_new_thread(rentedContainerCreation,())
+thread.start_new_thread(poisson_job_generator,())
+thread.start_new_thread(plot_completedjobs_time,())
+  
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+docker-machine create --driver virtualbox --virtualbox-disk-size "80000" --virtualbox-memory 4096 seams
+
+set environment variables form compose file.
+docker run  -d -it -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor  --name vwworkermin6e -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres'  --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log -n sumi-worker2
+
+
+
+
+
+
+docker run  -d -it -v /vwstorage:/vwstorage  --name vwworkerSumi -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+-e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_KEY='' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' 
+
+
+===
+http://docs.celeryproject.org/en/latest/userguide/optimizing.html#id6
+
+celery = Celery('myproject.celery',
+                broker=config.get('celery', 'broker'),
+                backend=config.get('celery', 'backend'),
+                include=['myproject.tasks'])
+
+# Optional configuration, see the application user guide.
+celery.conf.update(
+    CELERY_TASK_RESULT_EXPIRES=config.getint('celery', 'task.result.expires'),
+)
+
+
+delete files inside /vwstorage
+psql -U postgres -d postgres
+SELECT resource_name FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelprogress WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelruns WHERE id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+
+
+
+          fp= open('/var/www/vwadaptor/vwadaptor/modelrun/panda_test.txt','w')
+          fp.write(task_id)
+          fp.close()
+
+
+docker run  -d -t -i -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor  --name vwworkerRoshan00 -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres'  --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+
+
+
+
+*****************in vwadaptor/worker/config and then run 8 one-month input tasks
+celery= Celery('vwadaptor',
+                broker=config.CELERY_BROKER_URL,
+                backend=config.CELERY_RESULT_BACKEND,CELERYD_POOL_RESTARTS=True, CELERYD_PREFETCH_MULTIPLIER=1)
+
+celery.conf.update(
+    CELERYD_PREFETCH_MULTIPLIER=1
+#     CELERY_ACKS_LATE=True
+)
+=-----------------
+In taks is getting done by workers..but the flower api showing wrong 'processed' numbers
+
+
+
+docker run  -d -it -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor  --name vwworkerRoshan00 -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres'  --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+
+=====================================================================================
+from celery import Celery
+
+celery= Celery('vwadaptor', broker='redis://workerdb:6379/0',backend='redis://workerdb:6379/0')
+
+i = celery.control.inspect()
+print "\ni.active():"
+print i.active()
+
+print "\ni.reserved():"
+print i.reserved()
+
+print "\ni.scheduled():"
+print i.scheduled()
+print "\n"
+=====================================================================================
+
+
+********************* run docker cmds inside container ******************************************************************
+code snippet: http://stackoverflow.com/questions/24228630/how-to-use-docker-py-official-docker-client-to-start-a-bash-shell
+https://forums.docker.com/t/how-can-i-run-docker-command-inside-a-docker-container/337/5
+docker run -it -v /var/run/docker.sock:/var/run/docker.sock ubuntu:latest sh -c "apt-get update ; apt-get install docker.io -y ; bash"
+
+******************************************************************************************
+
+
+
+docker run  -d -t -i -v /var/run/docker.sock:/var/run/docker.sock -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --name taskmanager -p 5025:80 -e MODEL_HOST='http://vw-dev:5000' -e SQLALCHEMY_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' -e VWWEBAPP_JWT_AUTH_HEADER_PREFIX='JWT' -e VWWEBAPP_JWT_SECRET_KEY='virtualwatershed' -e VWWEBAPP_LOGIN_URL='http://vw-dev:5005/login' -e VWWEBAPP_LOGOUT_URL='http://vw-dev:5005/logout' -e VWWEBAPP_PORT='80' -e VWWEBAPP_REGISTER_URL='http://vw-dev:5005/register' -e VWWEBAPP_SESSION_COOKIE_NAME='vwsession' -e VWWEBAPP_SESSION_REDIS_HOST='sessiondb' -e VWWEBAPP_SESSION_TYPE='redis' -e VW_SECRET_KEY='virtualwatershed' --link r-vw-dev_postgres-modeldb_1:sessiondb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:webappdb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+
+
+
+
+ 
+ 
+ 
+ 
+from docker import Client
+cli = Client(base_url='unix://var/run/docker.sock')
+cli.create_container(image ,command , detach ,ports,environment ,volumes ,name , )
+print 
+ 
+ 
+ 
+ 
+ client.containers.run("ubuntu", "echo hello world")
+ 
+ 
+ 
+ 
+ 
+ docker run  -d -it -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor 
+ --name vwworkermin6e -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres'  
+ --link r-vw-dev_postgres-modeldb_1:modeldb --link r-vw-dev_postgres-userdb_1:userdb --link r-vw-dev_redis-workerdb_1:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log -n sumi-worker
+
+ 
+ ******************************************
+ docker py voulme creation : https://smarketshq.com/how-to-use-docker-py-307f4029cf#.m9uknyxdp
+ ports = [80]
+port_bindings = {80: 9999}
+volumes = ['/container']
+volume_bindings = {
+    '/host': {
+        'bind': '/host',
+        'mode': 'rw',
+    },
+}
+host_config = client.create_host_config(
+    binds=volume_bindings, port_bindings=port_bindings,
+)
+container = client.create_container(
+    image='image_name',
+    ports=ports,
+    volumes=volumes,
+    host_config=host_config,
+)
+client.start(container)
+ *****************************************
+ 
+ Selfmanaged System:
+ Automatically hardening a self-adaptive system against uncertainty - Erik M Fredericks - Uses GA
+ 
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+docker run -d --net=my-net --name postgres-userdb postgres
+docker run -d --net=my-net --name postgres-webappdb postgres
+docker run -d --net=my-net --name postgres-modeldb postgres
+
+docker run -d --net=my-net --name redis-workerdb redis  redis-server --appendonly yes 
+docker run -d --net=my-net --name redis-sessiondb redis  redis-server --appendonly yes 
+
+docker run -d -it -i -e VW_SECRET_KEY='virtualwatershed' -e VWWEBAPP_PORT='80' -e VWWEBAPP_JWT_SECRET_KEY='virtualwatershed' -e VWWEBAPP_JWT_AUTH_HEADER_PREFIX='JWT' -e SQLALCHEMY_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' -e VWWEBAPP_SESSION_TYPE='redis' -e VWWEBAPP_SESSION_REDIS_HOST='sessiondb' -e VWWEBAPP_SESSION_COOKIE_NAME='vwsession' -e VWWEBAPP_LOGIN_URL='http://vw-dev:5005/login' -e VWWEBAPP_LOGOUT_URL='http://vw-dev:5005/logout' -e VWWEBAPP_REGISTER_URL='http://vw-dev:5005/register' -e MODEL_HOST='http://vw-dev:5000' --net=my-net --name vw-webapp -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -it -i --net=my-net --name vwmail -p 1080:80 djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+
+docker run -d -e VWAUTH_ENV='dev' -e VWAUTH_HOST='0.0.0.0' -e VWAUTH_JWT_EXPIRATION_DELTA='10' -e VWAUTH_JWT_SECRET_KEY='virtualwatershed' -e VWAUTH_MAIL_PORT='25' -e VWAUTH_MAIL_SERVER='vwmail' -e VWAUTH_MAIL_USE_SSL='false' -e VWAUTH_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWAUTH_SECURITY_CONFIRMABLE='true' -e VWAUTH_SECURITY_EMAIL_SENDER='welcome@virtualwatershed.org' -e VWAUTH_SECURITY_PASSWORD_HASH='sha512_crypt' -e VWAUTH_SECURITY_PASSWORD_SALT='add_salt' -e VWAUTH_SECURITY_RECOVERABLE='true' -e VWAUTH_SECURITY_REGISTERABLE='true' -e VWAUTH_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' -e VWAUTH_WTF_CSRF_CHECK_DEFAULT='false' -e VWAUTH_WTF_CSRF_ENABLED='false' -e VWAUTH_SESSION_TYPE='redis' -e VWAUTH_SESSION_COOKIE_DOMAIN='.vw-dev' -e VWAUTH_SESSION_REDIS_HOST='sessiondb' -e VWAUTH_SESSION_COOKIE_NAME='vwsession' --net=my-net --name vwauth -p 5005:80 --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+
+docker run -d -t -i -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='virtualwatershed' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --net=my-net --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+
+))))))))))
+docker run -d -t -i --volumes-from btsync -v /vwstorage:/vwstorage --net=my-net --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+ --volumes-from btsync -v /vwstorage:/vwstorage -v /data:/vwstorage
+ 
+ 
+ 
+docker run -d -t -i --volumes-from btsync -v /data:/vwstorage --net=my-net --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+ 
+ -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='virtualwatershed' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+docker run -d -it -i -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --net=my-net --name vwmonitor -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+docker run  -d -it -v /vwstorage:/vwstorage  -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='prod' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWADAPTOR_SECRET='vwadaptor' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --net=my-net --name vwworker --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+ 
+docker run -d -t -i --volumes-from btsync -v /data:/vwstorage --env-file=/home/docker/env_vwadaptor.txt --net=my-net --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+vw worker
+ 
+ 
+flocker volume:
+
+
+docker run -d -it -i --volume-driver flocker -v flocker-volume:/vwstorage -e C_FORCE_ROOT='true' -e VWADAPTOR_CELERY_BROKER_URL='redis://workerdb:6379/0' -e VWADAPTOR_CELERY_RESULT_BACKEND='redis://workerdb:6379/0' -e VWADAPTOR_ENV='dev' -e VWADAPTOR_HOST='0.0.0.0' -e VWADAPTOR_JWT_AUTH_HEADER_PREFIX='JWT' -e VWADAPTOR_JWT_SECRET_KEY='virtualwatershed' -e VWADAPTOR_PORT='80' -e VWAUTH_SECRET='vwauth' -e VWADAPTOR_SQLALCHEMY_DATABASE_URI='postgresql://postgres:postgres@modeldb:5432/postgres' -e VWADAPTOR_STORAGE_CONTAINER='/vwstorage' -e VWADAPTOR_STORAGE_EXTENSIONS='nc,control,txt' -e VWADAPTOR_STORAGE_KEY='''''' -e VWADAPTOR_STORAGE_PROVIDER='LOCAL' -e VWADAPTOR_STORAGE_SECRET='''''' -e VWADAPTOR_STORAGE_SERVER='true' -e VWADAPTOR_STORAGE_SERVER_URL='/download' -e VWADAPTOR_USER_DATABASE_URI='postgresql://postgres:postgres@userdb:5432/postgres' --net=my-net --name vwmonitor -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+ 
+rsync -avz vwstorage/ docker@192.168.99.102:vwstorage/
+ 
+ 
+ 
+ docker@seams1:/$ docker logs btsync
+Starting btsync with secret: AA5DGLZLV5R5JAJMDH7EQRLBSFEFKWNCG
+By using this application, you agree to our Privacy Policy and Terms.
+http://www.bittorrent.com/legal/privacy
+http://www.bittorrent.com/legal/terms-of-use
+
+total physical memory 536870912 max disk cache 2097152
+Using IP address 172.17.0.4
+
+ 
+ 
+ 
+docker run -d -t -i --volumes-from btsync -v /data:/vwstorage --env-file=/home/docker/env_vwadaptor.txt --net=my-net --name vwadaptor -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+ 
+C_FORCE_ROOT=true 
+VWADAPTOR_CELERY_BROKER_URL=redis://workerdb:6379/0
+VWADAPTOR_CELERY_RESULT_BACKEND=redis://workerdb:6379/0
+VWADAPTOR_ENV=dev
+VWADAPTOR_HOST=0.0.0.0
+VWADAPTOR_JWT_AUTH_HEADER_PREFIX=JWT 
+VWADAPTOR_JWT_SECRET_KEY=virtualwatershed
+VWADAPTOR_PORT=80 
+VWADAPTOR_SECRET=virtualwatershed
+VWADAPTOR_SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@modeldb:5432/postgres
+VWADAPTOR_STORAGE_CONTAINER=/vwstorage
+VWADAPTOR_STORAGE_EXTENSIONS=nc,control,txt
+VWADAPTOR_STORAGE_KEY=''
+VWADAPTOR_STORAGE_PROVIDER=LOCAL
+VWADAPTOR_STORAGE_SECRET=''
+VWADAPTOR_STORAGE_SERVER=true
+VWADAPTOR_STORAGE_SERVER_URL=/download 
+VWADAPTOR_USER_DATABASE_URI=postgresql://postgres:postgres@userdb:5432/postgres
+
+ 
+ 
+docker run  -d -it --volumes-from btsync-client -v /data:/vwstorage --env-file=/home/docker/env_vwworker.txt --net=my-net --name vwworker --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+C_FORCE_ROOT=true
+VWADAPTOR_CELERY_BROKER_URL=redis://workerdb:6379/0
+VWADAPTOR_CELERY_RESULT_BACKEND=redis://workerdb:6379/0
+VWADAPTOR_ENV=prod
+VWADAPTOR_HOST=0.0.0.0
+VWADAPTOR_JWT_AUTH_HEADER_PREFIX=JWT
+VWADAPTOR_JWT_SECRET_KEY=virtualwatershed 
+VWADAPTOR_PORT=80
+VWADAPTOR_SECRET=vwadaptor
+VWADAPTOR_SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@modeldb:5432/postgres
+VWADAPTOR_STORAGE_CONTAINER=/vwstorage
+VWADAPTOR_STORAGE_EXTENSIONS=nc,control
+VWADAPTOR_STORAGE_KEY='' 
+VWADAPTOR_STORAGE_PROVIDER=LOCAL
+VWADAPTOR_STORAGE_SECRET=''
+VWADAPTOR_STORAGE_SERVER=true
+VWADAPTOR_STORAGE_SERVER_URL=/download
+VWADAPTOR_USER_DATABASE_URI=postgresql://postgres:postgres@userdb:5432/postgres
+ 
+ 
+docker@seams1:~$ docker logs 1f0d8d24781c
+Starting btsync with secret: AGIIU7GWUOEBVOTL6OCKFDIRRDTNE3JJP
+By using this application, you agree to our Privacy Policy and Terms.
+http://www.bittorrent.com/legal/privacy
+http://www.bittorrent.com/legal/terms-of-use
+
+total physical memory 536870912 max disk cache 2097152
+Using IP address 172.17.0.4
+
+
+
+
+
+
+==========================================================================
+
+
+docker run -d --net=my-net --name postgres-userdb postgres
+docker run -d --net=my-net --name postgres-webappdb postgres
+docker run -d --net=my-net --name postgres-modeldb postgres
+
+docker run -d --net=my-net --name redis-workerdb redis  redis-server --appendonly yes 
+docker run -d --net=my-net --name redis-sessiondb redis  redis-server --appendonly yes 
+
+
+docker run -d -i -t --name vwauth -p 5005:80 --env-file=/home/docker/env_vwauth.txt --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb --net=my-net virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -it -i --net=my-net --name vwmail -p 1080:80 djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+
+docker run -d -it -i --name vw-webapp --env-file=/home/docker/env_vwwebapp.txt --net=my-net -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -t -i --name vwadaptor --volumes-from btsync -v /vwstorage:/data -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwadaptor.txt --net=my-net -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+docker run -d -it --name vwworker1 -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --net=my-net --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+docker run -d -it -i --net=my-net --env-file=/home/docker/env_vwmonitor.txt  --name vwmonitor -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+docker run -d -p 8888:8888 -p 55555:55555 --net=my-net --name btsync ctlc/btsync
+
+docker run -d --net=my-net --name btsync-client -p 8888:8888 -p 55555:55555 ctlc/btsync AOGWOG6QVMN7JMCFNZH2VCZITQSD2N7R6
+
+AOGWOG6QVMN7JMCFNZH2VCZITQSD2N7R6
+
+
+
+
+
+docker run -d -t -i --name vwadaptor --net=my-net -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwadaptor.txt --net=my-net -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+
+
+
+
+
+
+
+
+
+docker run -d --name postgres-userdb postgres
+docker run -d --name postgres-webappdb postgres
+docker run -d --name postgres-modeldb postgres
+
+docker run -d --name redis-workerdb redis  redis-server --appendonly yes 
+docker run -d --name redis-sessiondb redis  redis-server --appendonly yes 
+
+
+docker run -d -i -t --name vwauth -p 5005:80 --env-file=/home/docker/env_vwauth.txt --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -it -i --name vwmail -p 1080:80 djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+
+docker run -d -it -i --name vw-webapp --env-file=/home/docker/env_vwwebapp.txt -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d -t -i --name vwadaptor -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwadaptor.txt -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+docker run -d -it --name vwworker -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+docker run -d -it -i --env-file=/home/docker/env_vwmonitor.txt  --name vwmonitor -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb virtualwatershed/vwadaptor flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+docker run -d -p 8888:8888 -p 55555:55555 --name btsync ctlc/btsync
+
+docker run -d --net=my-net --name btsync-client -p 8888:8888 -p 55555:55555 ctlc/btsync AOGWOG6QVMN7JMCFNZH2VCZITQSD2N7R6
+
+docker run  -d -t -i --net=my-net -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --env-file=/home/docker/taskmanager/app/main/env_taskmanager.txt --name taskmanager -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+
+
+*******************************************************************************************************************************************************************
+
+2 issues with multi host networking with docker:
+	1. Mutli host links are not fucntional. Check  env variables ("docker exec containerid env" ) to see multihost links work or not.
+	   http://devopscube.com/how-to-link-docker-containers-across-hosts-the-ambassador-pattern/
+	2. /vwstorage problem
+	   Solutiion:  rsync -avz vwstorage/ docker@192.168.99.102:vwstorage/
+	   
+To move the worker containers to another host. After uploading the files, before clicking run model, copy files to worker host using rsync.
+Then run the model. Links are working fine, even if i couldn't see the envs
+********************************************************************************************************************************************************************
+
+
+Blackbox Logic:
+1. Happiness - user willingness to wait
+2. Price ?
+3. No of jobs waiting in the queue
+4. Memory use - how much memory remaining in the host -- so that host can afford to have another worker container
+
+
+adv:
+there will not be any idle workers.- why?- work done- worker removed
+Since the workers are removed once the job is finished - handle memory, process issue with the host machine.
+
+if price is not an issue for user and the job to be done at any cost, add new host from Amazon ECS-get the work done and destroy it.
+To do that, put task administrat
+
+
+
+
+RUI:
+What make this different from dask, a Python library for parallel computing, now works on clusters
+
+
+
+
+
+=================WORK SO FAR========================================================================================================================
+
+Single host:
+
+docker-machine create --driver virtualbox --virtualbox-disk-size "80000" --virtualbox-memory 4096 test1
+
+(Run below from putty instead of powershell. Otherwise env file will not be detected.)
+
+docker run -d --name postgres-userdb postgres
+docker run -d --name postgres-webappdb postgres
+docker run -d --name redis-sessiondb redis  redis-server --appendonly yes 
+docker run -d -it -i --name vwmail -p 1080:80 djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+docker run -d -i -t --name vwauth -p 5005:80 --env-file=/home/docker/env_vwauth.txt --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+docker run -d -it -i --name vw-webapp --env-file=/home/docker/env_vwwebapp.txt -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+docker run -d --name postgres-modeldb postgres
+docker run -d --name redis-workerdb redis  redis-server --appendonly yes 
+docker run -d -t -i --name vwadaptor -v /home/docker/vwadaptor:/var/www/vwadaptor -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwadaptor.txt -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+docker run -d -it --name vwworker -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+docker run -d -it -i --name vwmonitor  --env-file=/home/docker/env_vwmonitor.txt  -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+docker run -d -t -i  --name taskmanager -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --env-file=/home/docker/env_taskmanager.txt -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb --link redis-sessiondb:sessiondb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+docker run -d -t -i  --name taskmanager -v /var/run/docker.sock:/var/run/docker.sock --env-file=/home/docker/env_taskmanager.txt -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb --link redis-sessiondb:sessiondb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+In dockerpy.py, update the celery flower url
+
+
+
+
+docker run -d -it -i --name vw-webapp --env-file=/home/docker/env_vwwebapp.txt -p 5030:80 -v /home/docker/vw-webapp:/var/www/vw-webapp --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+see how fast container is put up and serve the request.....is there any delay
+
+
+
+
+delete files inside /vwstorage
+psql -U postgres -d postgres
+SELECT resource_name FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelresources WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelprogress WHERE modelrun_id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+DELETE FROM modelruns WHERE id IN (SELECT id FROM modelruns WHERE user_id IN (1));
+
+
+
+docker run -d -it --name vwworker -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -Q rentedQueue --loglevel=info --autoreload --logfile=/celery.log 
+
+
+
+docker run -d -t -i  --name convtools -v /home/docker/convtools:/var/www/vwtools  --env-file=/home/docker/env_vwtools.txt -p 5020:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/convtools:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+
+docker run -d -it --name vwworker -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -Q rentedQueue --loglevel=info --autoreload --logfile=/celery.log 
+
+celery -A proj worker -l info -Q queue1,queue2
+
+
+
+
+
+docker run -d -it --name worker-3 -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log -n worker-3
+
+
+
+*******************************************************************************************************************************************************************************************************************************
+
+
+
+
+relationship between waiting time in queue and Money
+
+rui's logic - modification:
+every timeinterval, create a container only if quelegnth containes job
+if no no job waiting, incrment the counter for future use.
+
+
+
+
+
+
+
+
+docker run -d -it --name vwworker -v /home/docker/vwadaptor:/var/www/vwadaptor -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -Ofair --loglevel=info --autoreload --logfile=/celery.log 
+
+
+docker run -d -it --name vwworker1 -v /home/docker/vwadaptor:/var/www/vwadaptor -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -Ofair --loglevel=info --autoreload --logfile=/celery.log 
+
+
+---------------multi-host trial-------------------------------------------
+
+
+
+
+
+
+docker run -d --name postgres-userdb --net=my-net --env="constraint:node==mhs-demo0"  postgres
+docker run -d --name postgres-modeldb --net=my-net --env="constraint:node==mhs-demo0" postgres
+docker run -d --name postgres-webappdb --net=my-net --env="constraint:node==mhs-demo0" postgres
+docker run -d --name redis-sessiondb --net=my-net --env="constraint:node==mhs-demo0" redis  redis-server --appendonly yes 
+docker run -d --name redis-workerdb --net=my-net --env="constraint:node==mhs-demo0" redis  redis-server --appendonly yes 
+
+
+docker run -d -it -i --name vwmail -p 1080:80 --net=my-net --env="constraint:node==mhs-demo0" djfarrelly/maildev bin/maildev --web 80 --smtp 25 --verbose 
+docker run -d -i -t --name vwauth -p 5005:80 --net=my-net --env="constraint:node==mhs-demo0" --env-file=/home/docker/env_vwauth.txt --link vwmail:vwmail --link postgres-userdb:userdb --link redis-sessiondb:sessiondb virtualwatershed/vw-auth python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+docker run -d -it -i --name vw-webapp --net=my-net --env="constraint:node==mhs-demo0" --env-file=/home/docker/env_vwwebapp.txt -p 5030:80 --link postgres-userdb:userdb --link postgres-webappdb:webappdb --link redis-sessiondb:sessiondb josepainumkal/vw-webapp:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded 
+
+
+docker run -d -it --name vwworker --net=my-net --env="constraint:node==mhs-demo0" -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -c 1 --loglevel=info --autoreload --logfile=/celery.log 
+
+docker run -d -t -i  --name taskmanager --net=my-net --env="constraint:node==mhs-demo0" -v /vwstorage:/vwstorage -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --env-file=/home/docker/env_taskmanager.txt -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb --link redis-sessiondb:sessiondb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+docker run -d -it -i --name vwmonitor --net=my-net --env="constraint:node==mhs-demo0" --env-file=/home/docker/env_vwmonitor.txt  -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+docker run -d -t -i --name vwadaptor --net=my-net --env="constraint:node==mhs-demo0" -v /vwstorage:/vwstorage -v /home/docker/vwadaptor:/var/www/vwadaptor --env-file=/home/docker/env_vwadaptor.txt -p 5000:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI python manage.py runserver -p 80 -h 0.0.0.0 --threaded 
+
+
+docker run -d -it --name worker-1 --net=my-net --env="constraint:node==mhs-demo0" -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker -n worker-1 --loglevel=info --autoreload --logfile=/celery.log 
+
+
+
+
+docker run -d -it --name vwworker -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+
+
+docker run -d -it -i --name vwmonitor  --env-file=/home/docker/env_vwmonitor.txt  -p 5555:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI flower -A worker.modelworker --persistent=False --port=80 --broker=redis://workerdb:6379/0 
+
+docker run -d -t -i  --name taskmanager1 --net=my-net --env="constraint:node==mhs-demo1" -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --env-file=/home/docker/env_taskmanager.txt -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb --link redis-sessiondb:sessiondb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+
+
+docker run -d -p 80:2375 --net=my-net --env="constraint:node==mhs-demo3" -v /var/run/docker.sock:/var/run/docker.sock jarkt/docker-remote-api
+docker pull josepainumkal/vwadaptor:jose_toolUI
+
+docker run -d -p 80:2375 --net=my-net -v /var/run/docker.sock:/var/run/docker.sock jarkt/docker-remote-api
+docker pull josepainumkal/vwadaptor:jose_toolUI
+
+
+docker run -d -t -i  --name taskmanager1 --net=my-net --env="constraint:node==mhs-demo1" -v /vwstorage:/vwstorage -v /var/run/docker.sock:/var/run/docker.sock -v /home/docker/taskmanager:/var/www/taskmanager  --env-file=/home/docker/env_taskmanager.txt -p 5025:80 --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb --link redis-sessiondb:sessiondb josepainumkal/taskmanager:jose_toolUI python manage.py runserver -h 0.0.0.0 -p 80 --threaded
+
+
+rsync -avz vwstorage/ docker@192.168.99.101:vwstorage/
+
+
+rsync -avz vwstorage/ docker@192.168.99.101:/vwstorage/
+
+
+
+rsync -a -e "ssh" --rsync-path="sudo rsync" /vwstorage/ docker@192.168.99.101:/vwstorage/
+
+
+sshpass -p "tcuser" rsync -a -e "ssh" --rsync-path="sudo rsync" /vwstorage/ docker@192.168.99.101:/vwstorage/
+
+
+
+
+docker run -d -it --name vwworker --net=my-net  -v /vwstorage:/vwstorage --env-file=/var/www/taskmanager/container_env.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
+
+
+
+wget -qO- https://get.docker.com/ | sh
+https://forums.docker.com/t/how-can-i-install-a-specific-version-of-the-docker-engine/1993
+
+
+
+docker run -d -it --name vwworker --net=my-net --env="constraint:node==mhs-demo2" -v /vwstorage:/vwstorage --env-file=/home/docker/env_vwworker.txt --link postgres-modeldb:modeldb --link postgres-userdb:userdb --link redis-workerdb:workerdb josepainumkal/vwadaptor:jose_toolUI celery -A worker.modelworker worker --loglevel=info --autoreload --logfile=/celery.log 
+
++===========================================================================================================================
+
+docker-machine create -d virtualbox mh-keystore
+
+docker run -d -p "8500:8500" -h "consul" progrium/consul -server -bootstrap
+
+docker-machine create -d virtualbox --swarm --swarm-master --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-advertise=eth1:2376" mhs-demo0
+
+
+
+
+
+
+
+docker pull josepainumkal/vwadaptor:jose_toolUI 
+
+
+
+
+
+
+
+
+
+
+
+docker run -d -p 80:2375 --net=my-net -v /var/run/docker.sock:/var/run/docker.sock jarkt/docker-remote-api
+docker pull josepainumkal/vwadaptor:jose_toolUI
+
+
+
+
+***********************************************************************************************************************************
+Poisson Randome  generator:
+http://preshing.com/20111007/how-to-generate-random-timings-for-a-poisson-process/
