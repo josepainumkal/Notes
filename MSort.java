@@ -5,7 +5,7 @@ class MSort{
 	    int mid = a.length/2;
 
         int left[] = new int[mid];
-        int right[] = new int[nA - mid];
+        int right[] = new int[nA - mid];     // nA=7, mid =3, nA - mid=4
 
         if(nA<2){
            return;
