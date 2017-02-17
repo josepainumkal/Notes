@@ -87,6 +87,19 @@ if error, then go to home page and reach model page..
 if now also error, remove '/vwstorage' and remove all containers(first 5 is enough) and try...
 -----------------------------------------------------------------------------------------------------------------
   
-  
+Feb 16 Thursaday:
+for matplotlib to genereate graphs in docker container (taskmanager), edit the following file:
+
+The permanent way to solve this kind of problem is to edit .matplotlibrc file. Find it via
+
+>>> import matplotlib
+>>> matplotlib.matplotlib_fname()
+# This is the file location in Ubuntu
+'/etc/matplotlibrc'
+
+Then modify the backend in that file to backend : Agg. That is it.
+
+http://stackoverflow.com/questions/2801882/generating-a-png-with-matplotlib-when-display-is-undefined
+==================================================================+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   
