@@ -1,0 +1,68 @@
+public class RemoveDuplicateNoExtra {
+	public static void main(String args[]){
+		
+		String str = "aaaabbbbbcccccccccaaaaaaaalkldaaaadfdfd";
+		char c[] = str.toCharArray();
+		boolean duplicateFound = false;
+		
+		int tail=0;
+		
+	    if (c==null||c.length<0)
+		    return;
+	 
+	 
+		for(int i=0;i<c.length;i++){
+			
+			//	take each character one by one. Check that chracter is present anywhere before the the position	
+			
+			duplicateFound=false;
+			
+			for(int j=0;j<i;j++){  //	Here, take c[i] and see it is present anywhere before 
+				if(c[j]==c[i]){
+					duplicateFound = true;
+					break;
+				}
+			}
+			
+			if(duplicateFound){  //if present do nothing, so iterate over
+				continue;
+			}
+			
+			c[tail] = c[i];    // if not present, copy it. So all characters from 0-->tail will be always unique
+			tail++;
+		}
+		
+		c[tail]='\0';
+		for(int j=tail;j<c.length;j++){       //defensive fix to hide all elements after null character
+			c[j]='\0';
+		}
+		
+		 str = String.valueOf(c);
+		 System.out.println(str);
+	}
+
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Extra memory Allowed:
+
+public class RemoveDuplicate {
+	public static void main(String args[]){
+		String s = "aaaaabbbbbbbccccccccc";
+		
+		Using extra memory in the below code : StringBuffer and alIst
+		StringBuffer sb = new StringBuffer();
+		ArrayList<Character> alist =  new ArrayList<Character>();
+		
+		for(int i=0;i<s.length();i++){
+			if(!alist.contains(s.charAt(i))){
+				alist.add(s.charAt(i));
+			}
+		}
+		
+		for(Character c:alist){
+			System.out.print(c);
+		}
+	}
+
+}
