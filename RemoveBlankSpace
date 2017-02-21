@@ -1,0 +1,47 @@
+remove blank space inline:
+
+public static void main(String args[]){
+		String str1 = "sonia is a great women";
+		char[] str = str1.toCharArray();
+		int count=0;
+		
+    // When ever blank is encountered, all the elements after the blank is shifted to left by one
+		for(int i=0;i<str.length;i++){
+			if(str[i]==' '){
+				count++;
+				 for(int j=i; j<str.length-1;j++){
+					 str[j]=str[j+1];
+				 }
+			}
+			
+		}
+		
+    // Set the null character at the right place, (ie.total length-blankspaces)
+    //loop: defensive fix to replace all unwanted character after null element with nulls
+    
+		str[str.length-count]='\0';
+		for(int j=(str.length-count);j<str.length;j++){
+			str[j]='\0';
+		}
+		
+		System.out.println(String.valueOf(str));
+ }
+=====================================================================================================================================
+
+Blank space elimination using extra space:
+
+String str1 = "sumi is a great women";
+StringBuffer sb = new StringBuffer();
+		for(int i=0;i<str.length();i++){
+			if(str.charAt(i)!=' '){
+				sb.append(str.charAt(i));
+			}
+		}
+System.out.println(sb);
+
+=====================================================================================================================================
+
+
+
+
+
