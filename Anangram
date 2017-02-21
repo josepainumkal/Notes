@@ -1,0 +1,73 @@
+import java.util.*;
+
+public class AnagramStrings {
+	public static void main(String args[]){
+		String s1 ="thomas";
+		String s2 ="samoht";
+		int i=0,j=0;
+				
+		HashMap <Character, Integer> strmap1 = new HashMap();
+		HashMap <Character, Integer> strmap2 = new HashMap();
+		
+		for(i=0;i<s1.length();i++){
+			if(!strmap1.containsKey(s1.charAt(i))){
+				strmap1.put(s1.charAt(i), 0);
+			}else{
+				int val = (Integer)strmap1.get(s1.charAt(i));
+				strmap1.put(s1.charAt(i), (val+1));
+			}
+		}
+		
+		for(i=0;i<s2.length();i++){
+			if(!strmap2.containsKey(s2.charAt(i))){
+				strmap2.put(s2.charAt(i), 0);
+			}else{
+				int val = (Integer)strmap2.get(s2.charAt(i));
+				strmap2.put(s1.charAt(i), (val+1));
+			}
+		}
+		
+		int flag =0;
+		if(strmap1.size()==strmap2.size()){
+			for(Character c: strmap1.keySet()){
+				if(!strmap2.containsKey(c)){
+					flag =1;
+					break;
+				}else{
+					if(strmap2.get(c)!=strmap1.get(c)){
+						flag =1;
+						break;
+					}
+				}
+			}
+		}else{
+			flag =1;
+		}
+			
+		if(flag==1)
+			System.out.println("Not an Anagram");
+		else
+			System.out.println("Anagram");
+	}
+
+}
+
+=============================================================================================================================================
+
+OR SORT BOTH STRINGS :
+i.e sort the characters in both strings
+THEN DO STRING EQUALS TO CHECK ANAGRAM OR NOT
+====================================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
