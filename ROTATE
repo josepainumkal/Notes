@@ -1,0 +1,115 @@
+Rotate90Degree - 2D array
+
+N*N  or M*N Array (extra memory):
+
+
+public class Rotate902D {
+	public static void main(String args[]){
+
+//		MN array  (m rows, ncols)
+		int m=3,n=4;  
+		
+		char N[][] = {{'M','I','N','U'},{'S','U','M','I'},{'J','O','S','E'}};
+
+		
+		char M[][] = new char[n][m];  // rotated array will have n rows and m cols
+		
+        for(int r=0;r<m;r++){
+        	 for(int c=0;c<n;c++){
+        		 M[c][m-r-1] = N[r][c];
+        	 }
+        }
+		
+        
+        for(int r=0;r<n;r++){
+       	  for(int c=0;c<m;c++){
+       		System.out.print(M[r][c]);
+       	 }
+       	System.out.println();
+       }
+		
+	}
+
+}
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+N * N inline: ( doesnot work with M*N, only for N*N): Idea from youtube video
+
+public class Rotate90Inline {
+	
+	static void swap(char a[][], int i,int j,int k,int l){
+		char temp = a[i][j];
+		a[i][j]=a[k][l];
+		a[k][l]=temp;	
+	}
+	
+	public static void main(String args[]){
+		
+		char c[][]= {{'m','i','n','u'},{'s','u','m','i'},{'j','o','s','e'}};
+		
+		int level=0;
+		int last=c.length-1;
+		int totlevels = c.length/2;
+		
+		while(level<totlevels){
+			
+			for(int i=level;i<last;i++){
+				swap(c,level,i,i,last);
+				swap(c,level,i,last,last-i+level);
+				swap(c,level,i,last-i+level,level);	
+			}
+			level++;
+			last--;
+		}
+		
+		
+		for(int i=0;i<4;i++){
+			for(int j=0;j<3;j++){
+				System.out.print(c[i][j]);
+			}
+			System.out.println();
+		}
+	}
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+Rotate array by k points:
+
+public class RotateString0 {
+	static void reverse(int a[], int start, int end){		
+	   if(start<end){
+			for(int i=start,j=end; i<(end-start)/2; i++,j--){
+				int temp = a[i];
+				a[i] = a[j];
+				a[j] = temp;
+			}
+		}
+	}
+	
+	
+	static void rotate(int a[], int k){
+		int n = a.length;
+		reverse(a,0,k-1);
+		reverse(a,k,n-1);
+		reverse(a,0,n-1);
+		
+	}
+	
+	
+	
+	public static void main(String args[]){
+		int a[]={1,2,3,4,5,6,7,8,9};
+		
+		//Rotate
+		rotate(a,1);
+		
+		for(int i:a){
+			System.out.print(i);
+		}
+	}
+
+}
+----------------------------------------------------------------------------------------------------------------------------------------
+
+
+
