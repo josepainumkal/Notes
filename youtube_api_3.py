@@ -41,6 +41,10 @@ def youtube_search(options):
       # payload = {'id': search_result["id"]["videoId"], 'part': 'contentDetails,statistics,snippet', 'key': DEVELOPER_KEY}
       l = requests.Session().get('https://www.googleapis.com/youtube/v3/videos', params=payload)    
       print l.text
+      resp_dict = json.loads(l.content)
+      print "Title: ",resp_dict['items'][0]['snippet']['title']
+      print "commentCount: ",resp_dict['items'][0]['statistics']['commentCount']
+      print "likeCount: ",resp_dict['items'][0]['statistics']['likeCount']
 
 
 
@@ -58,3 +62,28 @@ if __name__ == "__main__":
     youtube_search(args)
   except HttpError, e:
     print "A HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+    
+    
+    
+########################################################################################################################
+
+
+import requests
+import json
+
+DEVELOPER_KEY = "AIzaSyAlwO5OTlNmsr7xjOx7c-IilXr3NaTD_o0"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+
+# https://developers.google.com/youtube/v3/docs/search/list
+payload = {'part': 'snippet', 'key': DEVELOPER_KEY, 'order':'viewCount', 'q': 'A R Rahman', 'maxResults': 10}
+l = requests.Session().get('https://www.googleapis.com/youtube/v3/search', params=payload)    
+
+resp_dict = json.loads(l.content)
+print resp_dict['items']
+for i in resp_dict['items']:
+  print "Title: ",i['snippet']['title']
+  print "VideoId: ",i['id']['videoId']
+
+
+########################################################################################################################
