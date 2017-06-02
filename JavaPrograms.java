@@ -28,8 +28,7 @@
 		//System.out.println("i: "+i);
 		
 		//handling the last character
-		int prev_pos = i-1;
-		arr[pos]=arr[prev_pos];
+		arr[pos]=arr[prev];
 		pos++;
 		if(k>1){
 			arr[pos]= (char)(k+48);
